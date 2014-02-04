@@ -31,7 +31,7 @@ data = []
 
 #Querying the database:
 try:
-    con = mdb.connect('localhost','nfluser','lt56','armchairanalysis')
+    con = mdb.connect(read_default_file='~/.my.cnf',read_default_group='aadb')
     cur = con.cursor()
 
     #Get the table:
