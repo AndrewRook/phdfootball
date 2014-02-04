@@ -3,3 +3,4 @@ These scripts were written by me (Andrew Schechtman-Rook) for my blog, phdfootba
 
 Scripts:
 load.py: load the Armchair Analysis files into a MySQL database.
+endurance.py: Compute statistics about defensive endurance.
