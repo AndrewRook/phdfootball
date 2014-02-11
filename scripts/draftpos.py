@@ -14,8 +14,6 @@ def computeexpectationvalue(draftpositions):
     positions = np.arange(1,len(numperposition)+1)
     probabilities = np.cumsum(numperposition[::-1])[::-1]/float(np.sum(numperposition))
     expectationvalue = np.sum(probabilities)
-#     for i in range(len(positions)):
-#         print positions[i],numperposition[i],backcumsum[i]
     return expectationvalue
 
 
@@ -109,4 +107,3 @@ except mdb.Error, e:
 finally:
     if con:
         con.close()
-
