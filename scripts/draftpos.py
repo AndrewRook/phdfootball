@@ -8,15 +8,31 @@ import matplotlib.pyplot as plt
 from matplotlib.ticker import AutoMinorLocator
 import MySQLdb as mdb
 
-def computeexpectationvalue(draftpositions):
-    #Compute the number of players taken at each draft position:
-    numperposition = np.bincount(draftpositions)[1:]#the [1:] gets rid of zeroth pick, which is used for undrafted players.
-    positions = np.arange(1,len(numperposition)+1)
-    probabilities = np.cumsum(numperposition[::-1])[::-1]/float(np.sum(numperposition))
-    expectationvalue = np.sum(probabilities)
-    return expectationvalue
+def computeexpectationvalues(draftdata,poslist = None):
+    if poslist == None:
+        poslist = ['QB','RB','WR','TE','OL','DL','LB','DB','K']
+    expectationvals = np.zeros(len(poslist),dtype=np.float)
+    for i in range(len(poslist)):
+        draftpositions = draftdata[(draftdata[:,0]==poslist[i]),1].astype(np.int)
+        #Compute the number of players taken at each draft position:
+        numperposition = np.bincount(draftpositions)[1:]#the [1:] gets rid of zeroth pick, which is used for undrafted players.
+        positions = np.arange(1,len(numperposition)+1)
+        probabilities = np.cumsum(numperposition[::-1])[::-1]/float(np.sum(numperposition))
+        expectationvals[i] = np.sum(probabilities)
+    return poslist,expectationvals
 
-
+def bootstrapexpectations(draftdata,numboot):
+    poslist = ['QB','RB','WR','TE','OL','DL','LB','DB','K']
+    expectations = np.zeros((len(poslist),numboot))
+    resampindices = np.random.randint(0,draftdata.shape[0],(draftdata.shape[0],numboot))
+    for i in range(numboot):
+        #permute data:
+        tempdata = draftdata[resampindices[:,i],:]
+        expectations[:,i] = computeexpectationvalues(tempdata,poslist=poslist)[1]
+    print expectations.shape
+    stds = np.std(expectations,axis=1,ddof=1)
+    return stds
+        
 con = ''
 data = []
 
@@ -28,19 +44,12 @@ try:
     #Get the table:
     cur.execute('select roster.pos1,roster.dpos from roster where roster.dpos > 0 and roster.start > 2001')
     data = np.array(cur.fetchall())
-
+    
     #Compute the expectation value of each position:
-    qbexpectation = computeexpectationvalue(data[(data[:,0]=='QB'),1].astype(np.int))
-    rbexpectation = computeexpectationvalue(data[(data[:,0]=='RB'),1].astype(np.int))
-    wrexpectation = computeexpectationvalue(data[(data[:,0]=='WR'),1].astype(np.int))
-    teexpectation = computeexpectationvalue(data[(data[:,0]=='TE'),1].astype(np.int))
-    olexpectation = computeexpectationvalue(data[(data[:,0]=='OL'),1].astype(np.int))
-    dlexpectation = computeexpectationvalue(data[(data[:,0]=='DL'),1].astype(np.int))
-    dbexpectation = computeexpectationvalue(data[(data[:,0]=='DB'),1].astype(np.int))
-    lbexpectation = computeexpectationvalue(data[(data[:,0]=='LB'),1].astype(np.int))
-    kexpectation = computeexpectationvalue(data[(data[:,0]=='K'),1].astype(np.int))
-    print "QB: {0:.2f}, RB: {1:.2f}, WR: {2:.2f}, TE: {3:.2f}, OL: {4:.2f}".format(qbexpectation,rbexpectation,wrexpectation,teexpectation,olexpectation)
-    print "DL: {0:.2f}, LB: {1:.2f}, DB: {2:.2f}, K: {3:.2f}".format(dlexpectation,lbexpectation,dbexpectation,kexpectation)
+    poslist,expectationvalues = computeexpectationvalues(data)
+    stds = bootstrapexpectations(data,100000)
+    for i in range(len(poslist)):
+        print "{0:s}: {1:.2f} +/- {2:.3f}".format(poslist[i],expectationvalues[i],stds[i])
 
     #Make some histogram plots:
     bins = np.arange(1,250,10)
