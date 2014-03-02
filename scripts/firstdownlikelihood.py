@@ -34,12 +34,10 @@ if __name__ == "__main__":
         
         #Get the table:
         start = time.time()
-        #cur.execute('select core.*,games.h,games.ptsv,games.ptsh from core join games on core.gid=games.gid where core.dseq > 0 and core.dwn > 0')
-        #cur.execute('select core.*,T.pos1 from core left join (select pass.pid,roster.pos1 from pass join roster on roster.player=pass.psr) as T on core.pid=T.pid')
-        cur.execute('select core.*,T.pos1 from core left join (select rush.pid,roster.pos1 from rush join roster on roster.player=rush.bc) as T on core.pid=T.pid')
+        cur.execute('select core.*,T.pos1,games.seas from core left join (select rush.pid,roster.pos1 from rush join roster on roster.player=rush.bc) as T on core.pid=T.pid join games on core.gid=games.gid where games.seas >= 2000 and games.seas <= 2011')
         print "Time = {0:.2f}".format(time.time()-start)
         data = np.array(cur.fetchall())
-        #0) Game id, 1) play id, 2) offensive team, 3) defensive team, 4) play type, 5) drive sequence, 6) play length, 7) quarter, 8) minutes left, 9) seconds left, 10) offensive points, 11) defensive points, 12) offense timeouts left, 13) defense timeouts left, 14) down, 15) yards to gain, 16) yards from own goal, 17) zone, 18) offensive line ID, 19) Rusher position (NULL if not rush).
+        #0) Game id, 1) play id, 2) offensive team, 3) defensive team, 4) play type, 5) drive sequence, 6) play length, 7) quarter, 8) minutes left, 9) seconds left, 10) offensive points, 11) defensive points, 12) offense timeouts left, 13) defense timeouts left, 14) down, 15) yards to gain, 16) yards from own goal, 17) zone, 18) offensive line ID, 19) Rusher position (NULL if not rush), 20) season.
 
         #Compute drive IDs for every play:
         firstplayofdrive = np.zeros(len(data[:,0]),dtype=np.bool)
@@ -60,18 +58,30 @@ if __name__ == "__main__":
         #You know the offense got at least one more first down during the drive when cumfirstdowns[i] < firstdownsfromdrive[i]
 
         #Apply any filters (e.g. time, quarter, etc) to the data:
-        #Filter out anything within a given time limit in the 2nd or 4th quarter
         filterbool = np.ones(data.shape[0],dtype=np.bool)
-        filterbool = filterbool & ((data[:,7].astype(np.int) != 2) | (data[:,8].astype(np.int) >= 2)) & ((data[:,7].astype(np.int) != 4) | (data[:,8].astype(np.int) >= 2))
+        #Filter out anything within a given time limit in the 2nd or 4th quarter
+        filterbool = filterbool & (((data[:,7].astype(np.int) != 2) & (data[:,7].astype(np.int) != 4)) | (data[:,8].astype(np.int) >= 2))
         #Filter out games that aren't close:
         filterbool = filterbool & (np.abs(data[:,10].astype(np.int)-data[:,11].astype(np.int)) <= 16)
         #Filter out penalties:
         filterbool = filterbool & ((data[:,4] == 'RUSH') | (data[:,4] == 'PASS'))
         #Filter out things in the redzone to avoind N-and-goal plays:
         filterbool = filterbool & (data[:,16].astype(np.int) <= 80)
-        #Filter out everything within 35 yards of the defense's endzone, which is what Brian Burke does:
-        #filterbool = filterbool & (data[:,16].astype(np.int) <= 65)
+        #Filter out plays when the offense is backed up in their own endzone:
+        filterbool = filterbool & (data[:,16].astype(np.int) >= 10)
 
+        #Make a filter as close to Brian Burke's as I can get it:
+        burkefilterbool = np.ones(data.shape[0],dtype=np.bool)
+        #Filter out anything within the 2 minute warnings
+        burkefilterbool = burkefilterbool & (((data[:,7].astype(np.int) != 2) & (data[:,7].astype(np.int) != 4)) | (data[:,8].astype(np.int) >= 2))
+        #Filter out penalties:
+        burkefilterbool = burkefilterbool & ((data[:,4] == 'RUSH') | (data[:,4] == 'PASS'))
+        #Filter out things within 35 yards of the endzone:
+        burkefilterbool = burkefilterbool & (data[:,16].astype(np.int) <= 65)
+
+        #Set if we want to use my filter or Burke's:
+        #filterbool = burkefilterbool
+        
         #Set up rushing and passing plays:
         rushfilterbool = filterbool & (data[:,4] == 'RUSH')
         passfilterbool = filterbool & (data[:,4] == 'PASS')
@@ -98,6 +108,10 @@ if __name__ == "__main__":
         rushfirstdown_data = goodrushdata[goodrushcumfirstdowns < goodrushfirstdownsfromdrive,:]
         passfirstdown_data = goodpassdata[goodpasscumfirstdowns < goodpassfirstdownsfromdrive,:]
         rbrushfirstdown_data = goodrbrushdata[goodrbrushcumfirstdowns < goodrbrushfirstdownsfromdrive,:]
+
+        print "Number of Pass plays: ",goodpassdata.shape[0]
+        print "Number of Run plays: ",goodrushdata.shape[0]
+        print "Total number of plays: ",goodpassdata.shape[0]+goodrushdata.shape[0]
         
         testingbool = (rushfirstdown_data[:,14].astype(np.int) == 3) & (rushfirstdown_data[:,15].astype(np.int) > 5)
         #print (rushfirstdown_data[testingbool,:])[:10,:]
@@ -121,18 +135,22 @@ if __name__ == "__main__":
         goodallrushplaydistributions = []
         goodallpassplaydistributions = []
         goodallrbrushplaydistributions = []
+        goodallqbrushplaydistributions = []
         goodfirstdowndistributions = []
         goodrushfirstdowndistributions = []
         goodpassfirstdowndistributions = []
         goodrbrushfirstdowndistributions = []
+        goodqbrushfirstdowndistributions = []
         firstdownpcts = []
         rushfirstdownpcts = []
         passfirstdownpcts = []
         rbrushfirstdownpcts = []
+        qbrushfirstdownpcts = []
         firstdownbins = []
         rushfirstdownbins = []
         passfirstdownbins = []
         rbrushfirstdownbins = []
+        qbrushfirstdownbins = []
         for i in range(len(allplaydistributions)):
             goodbinsbool = (allplaydistributions[i] >= minsamples)
             goodrushbinsbool = (allrushplaydistributions[i] >= minsamples)
@@ -146,6 +164,12 @@ if __name__ == "__main__":
             goodallrushplaydistributions.append(allrushplaydistributions[i][goodrushbinsbool])
             goodallpassplaydistributions.append(allpassplaydistributions[i][goodpassbinsbool])
             goodallrbrushplaydistributions.append(allrbrushplaydistributions[i][goodrbrushbinsbool])
+            tempallqbrushplays = allrushplaydistributions[i] - allrbrushplaydistributions[i]
+            goodqbrushbinsbool = (tempallqbrushplays >= minsamples)
+            qbrushfirstdownbins.append(ytgbins[goodqbrushbinsbool])
+            tempfirstdownqbrushplays = rushfirstdowndistributions[i] - rbrushfirstdowndistributions[i]
+            goodqbrushfirstdowndistributions.append(tempfirstdownqbrushplays[goodqbrushbinsbool])
+            goodallqbrushplaydistributions.append(tempallqbrushplays[goodqbrushbinsbool])
             goodfirstdowndistributions.append(firstdowndistributions[i][goodbinsbool])
             goodrushfirstdowndistributions.append(rushfirstdowndistributions[i][goodrushbinsbool])
             goodpassfirstdowndistributions.append(passfirstdowndistributions[i][goodpassbinsbool])
@@ -154,11 +178,22 @@ if __name__ == "__main__":
             rushfirstdownpcts.append(100.*goodrushfirstdowndistributions[i].astype(np.float)/goodallrushplaydistributions[i])
             passfirstdownpcts.append(100.*goodpassfirstdowndistributions[i].astype(np.float)/goodallpassplaydistributions[i])
             rbrushfirstdownpcts.append(100.*goodrbrushfirstdowndistributions[i].astype(np.float)/goodallrbrushplaydistributions[i])
+            qbrushfirstdownpcts.append(100.*goodqbrushfirstdowndistributions[i].astype(np.float)/goodallqbrushplaydistributions[i])
+            # if i == 2:
+            #     print "QB 1st: ",goodqbrushfirstdowndistributions[i]
+            #     print "QB all: ",goodallqbrushplaydistributions[i]
+            #     print "RB 1st: ",goodrbrushfirstdowndistributions[i]
+            #     print "RB all: ",goodallrbrushplaydistributions[i]
+            #     print "rush 1st: ",goodrushfirstdowndistributions[i]
+            #     print "rush all: ",goodallrushplaydistributions[i]
+            #     #print 100.*goodrbrushfirstdowndistributions[i].astype(np.float)/goodallrbrushplaydistributions[i]
 
         ax = plt.figure().add_subplot(111)
         colors = ['black','blue','red','green']
         shapes = ['o','s','^','*']
         labels = [r'1$^{\mathrm{st}}$ Down',r'2$^{\mathrm{nd}}$ Down',r'3$^{\mathrm{rd}}$ Down',r'4$^{\mathrm{th}}$ Down']
+        axes = []
+        axeslabels = []
         f = open('firstdownlikelihood_tabulated_all.txt','w')
         f.write("#YTG   % chance of 1st down\n")
         fpass = open('firstdownlikelihood_tabulated_pass.txt','w')
@@ -183,7 +218,9 @@ if __name__ == "__main__":
             if len(rbrushfirstdownbins[i]) > 0:
                 np.savetxt(frbrush,zip(rbrushfirstdownbins[i],rbrushfirstdownpcts[i]),fmt='%d %.2f')
             frbrush.write("\n")
-            ax.plot(firstdownbins[i],firstdownpcts[i],ls='-',marker=shapes[i],color=colors[i],mec=colors[i],mfc=colors[i],ms=5,label=labels[i])
+            tempax, = ax.plot(firstdownbins[i],firstdownpcts[i],ls='-',marker=shapes[i],color=colors[i],mec=colors[i],mfc=colors[i],ms=5)
+            axes.append(tempax)
+            axeslabels.append(labels[i])
             ax.plot(rushfirstdownbins[i],rushfirstdownpcts[i],ls='--',color=colors[i])
             ax.plot(passfirstdownbins[i],passfirstdownpcts[i],ls=':',color=colors[i])
         f.close()
@@ -192,25 +229,45 @@ if __name__ == "__main__":
         frbrush.close()
         ax.set_xlabel('Yards to Gain')
         ax.set_ylabel('Conversion Percentage')
+        allplaylegend, = ax.plot([-100],[-100],ls='-',color='black')
+        runplaylegend, = ax.plot([-100],[-100],ls='--',color='black')
+        passplaylegend, = ax.plot([-100],[-100],ls=':',color='black')
+        ax.set_xlim(0,22)
+        ax.set_ylim(0,100)
+        l1 = ax.legend(axes,labels,loc='upper right',numpoints=1,prop={'size':10})
+        l2 = ax.legend([allplaylegend,runplaylegend,passplaylegend],['All Plays','Runs','Passes'],loc='lower left',prop={'size':10})
+        ax.figure.gca().add_artist(l1)
         ax.xaxis.set_minor_locator(AutoMinorLocator())
         ax.yaxis.set_minor_locator(AutoMinorLocator())
-        ax.legend(loc='upper right',numpoints=1,prop={'size':10})
         ax.figure.savefig('firstdownlikelihood_all.png')
 
         ax = plt.figure().add_subplot(111)
         colors = ['black','blue','red','green']
         shapes = ['o','s','^','*']
         labels = [r'1$^{\mathrm{st}}$ Down',r'2$^{\mathrm{nd}}$ Down',r'3$^{\mathrm{rd}}$ Down',r'4$^{\mathrm{th}}$ Down']
+        axes = []
+        axeslabels = []
         for i in range(len(firstdownpcts)):
-            ax.plot(firstdownbins[i],firstdownpcts[i],ls='-',marker=shapes[i],color=colors[i],mec=colors[i],mfc=colors[i],ms=5,label=labels[i])
+            tempax, = ax.plot(firstdownbins[i],firstdownpcts[i],ls='-',marker=shapes[i],color=colors[i],mec=colors[i],mfc=colors[i],ms=5)
+            axes.append(tempax)
+            axeslabels.append(labels[i])
             ax.plot(rushfirstdownbins[i],rushfirstdownpcts[i],ls='--',color='#D8D8D8')
             ax.plot(passfirstdownbins[i],passfirstdownpcts[i],ls=':',color=colors[i])
             ax.plot(rbrushfirstdownbins[i],rbrushfirstdownpcts[i],ls='--',color=colors[i])
+            print "{0:d} down: ".format(i+1),qbrushfirstdownpcts[i]
         ax.set_xlabel('Yards to Go')
         ax.set_ylabel('Conversion Percentage')
+        allplaylegend, = ax.plot([-100],[-100],ls='-',color='black')
+        runplaylegend, = ax.plot([-100],[-100],ls='--',color='black')
+        passplaylegend, = ax.plot([-100],[-100],ls=':',color='black')
+        
+        ax.set_xlim(0,22)
+        ax.set_ylim(0,100)
         ax.xaxis.set_minor_locator(AutoMinorLocator())
         ax.yaxis.set_minor_locator(AutoMinorLocator())
-        ax.legend(loc='upper right',numpoints=1,prop={'size':10})
+        l1 = ax.legend(axes,labels,loc='upper right',numpoints=1,prop={'size':10})
+        l2 = ax.legend([allplaylegend,runplaylegend,passplaylegend],['All Plays','Runs','Passes'],loc='lower left',prop={'size':10})
+        ax.figure.gca().add_artist(l1)
         ax.figure.savefig('firstdownlikelihood_qbcorr.png')
 
         
