@@ -254,6 +254,7 @@ if __name__ == "__main__":
             ax.plot(rushfirstdownbins[i],rushfirstdownpcts[i],ls='--',color='#D8D8D8')
             ax.plot(passfirstdownbins[i],passfirstdownpcts[i],ls=':',color=colors[i])
             ax.plot(rbrushfirstdownbins[i],rbrushfirstdownpcts[i],ls='--',color=colors[i])
+            print "{0:d} down: ".format(i+1),qbrushfirstdownbins[i]
             print "{0:d} down: ".format(i+1),qbrushfirstdownpcts[i]
         ax.set_xlabel('Yards to Go')
         ax.set_ylabel('Conversion Percentage')
