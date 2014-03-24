@@ -1,6 +1,2 @@
 January 23, 2014:
 These scripts were written by me (Andrew Schechtman-Rook) for my blog, phdfootball.blogspot.com. Feel free to look through them and copy anything you think might be useful for you. If you do take something, please just provide a short attribution to me in the comments, and maybe shoot me an email telling me whatever cool use you find for my code!
-
-Scripts:
-load.py: load the Armchair Analysis files into a MySQL database.
-endurance.py: Compute statistics about defensive endurance.
