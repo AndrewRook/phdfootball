@@ -117,7 +117,7 @@ if __name__ == "__main__":
     #Compute the coefficients and plot an example reconstruction:
     coeffs = compute_pca_coeffs(pca_components,reception_stats)
     reconstruct_id = 0
-    numcoeffs = 10
+    numcoeffs = 3
     reconstructed_receptions = reconstruct_data(pca_components,coeffs,reconstruct_id,numcoeffs)
     ax = plt.figure().add_subplot(111)
     ax.patch.set_facecolor('#F0F0F0')
@@ -150,12 +150,12 @@ if __name__ == "__main__":
     print "Least WR-Like Tight Ends"
     print_extreme_coeffs(coeffs,names,positions,0,largestvalues,'TE')
 
-    print "Test"
-    smallestvalues = np.s_[:10]
-    largestvalues = np.s_[-10:]
-    print_extreme_coeffs(coeffs,names,positions,2,smallestvalues,'WR')
-    print ""
-    print_extreme_coeffs(coeffs,names,positions,2,largestvalues,'WR')
+    # print "Test"
+    # smallestvalues = np.s_[:10]
+    # largestvalues = np.s_[-10:]
+    # print_extreme_coeffs(coeffs,names,positions,2,smallestvalues,'WR')
+    # print ""
+    # print_extreme_coeffs(coeffs,names,positions,2,largestvalues,'WR')
     
     #Plot Histograms of Coefficient 1 for WRs, TEs, and RBs:
     ax = plt.figure().add_subplot(111)
@@ -166,7 +166,7 @@ if __name__ == "__main__":
     for i in range(len(positionlist)):
         hist,edges = np.histogram(coeffs[0,(positions == positionlist[i])],bins=posbins)
         ax.bar(edges[:-1],hist,width=edges[1:]-edges[:-1],color=poscolors[i],edgecolor='black',alpha=0.75,label='{0:s}s'.format(positionlist[i]))
-    ax.set_xlabel('First Coefficient',fontsize=12,weight='semibold')
+    ax.set_xlabel('First PCA Coefficient',fontsize=12,weight='semibold')
     ax.set_ylabel('# of Players',fontsize=12,weight='semibold')
     ax.set_ylim(0,ax.get_ylim()[1]+1)
     ax.legend(loc='upper left',prop={'size':10})
@@ -219,11 +219,11 @@ if __name__ == "__main__":
         axs[i].patch.set_facecolor('#F0F0F0')
         axs[i].plot(reception_bins[:-1]+0.5,pca_components[i],ls='-',lw=2,color=component_colors[i])
         axs[i].yaxis.set_major_locator(MaxNLocator(nbins=4,steps=[1,2,4,5,10]))
-        axs[i].set_ylabel(i+1,fontsize=12,weight='semibold')
+        axs[i].set_ylabel(i,fontsize=12,weight='semibold')
         axs[i].set_xlim(reception_bins[0]+0.5,reception_bins[-1]-0.5)
         axs[i].set_ylim(axs[i].get_ylim()[0]+0.001,axs[i].get_ylim()[1]-0.001)
         axs[i].yaxis.set_label_coords(labelx,0.5)
-        axall.plot(reception_bins[:-1]+0.5,pca_components[i]/np.max(pca_components[i]),ls='-',lw=2,color=component_colors[i],label='Component {0:d}'.format(i+1))
+        axall.plot(reception_bins[:-1]+0.5,pca_components[i]/np.max(pca_components[i]),ls='-',lw=2,color=component_colors[i],label='Component {0:d}'.format(i))
     axs[0].set_title('Reception PCA Components',fontsize=14,weight='semibold')
     axs[-1].text(axs[i].get_xlim()[1]-(axs[i].get_xlim()[1]-axs[i].get_xlim()[0])/40.,axs[i].get_ylim()[0]+(axs[i].get_ylim()[1]-axs[i].get_ylim()[0])/20.,'phdfootball.blogspot.com',color='white',alpha=1,fontsize=14,weight='semibold',va='bottom',ha='right')
     axs[-1].set_xlabel('Reception Yards',fontsize=12,weight='semibold')
