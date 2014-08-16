@@ -1,0 +1,1 @@
+The scripts in this directory are designed to remove the camera motion from All-22 video of NFL games, although is likely to be generic enough to work in some other cases (e.g. other sports or different NFL footage). 
