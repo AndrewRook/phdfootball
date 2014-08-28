@@ -1,6 +1,7 @@
 *.png
 *.jpg
 *.eps
+*.gif
 *~
 *.pyc
 *.txt
