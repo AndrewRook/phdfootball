@@ -13,7 +13,6 @@ import os
 import sys
 import bottleneck as bn
 
-import astropy.io.fits as pyfits
 
 class frame:
     def __init__(self,cap,framenumber,panoramafile = None,image = None):
@@ -180,9 +179,6 @@ def interp_mask(boolmask,offset=5):
     interp_vals[interpy,interpx] = interpdata
 
     return interp_vals
-    # os.system('rm -f test*.fits')
-    # hdu = pyfits.PrimaryHDU((interp_bool).astype(np.int))
-    # hdu.writeto('test_interp.fits')
     
 
 def adj_mask(inpmask,adjustment=1):
