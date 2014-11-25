@@ -11,10 +11,10 @@ There is also the convenience script rectify_with_animation.sh, which has the sa
 
 ##Requirements
 PhDVision depends on several packages. Most crucial is the dependence on the OpenCV library, which is written in C++. You'll need to download the library itself as well as the python bindings. Additionally, PhDVision requires the following Python modules:
-numpy
-scipy
-scikit-image
-matplotlib
-bottleneck
+*numpy
+*scipy
+*scikit-image
+*matplotlib
+*bottleneck
 
 An OpenCV installation can be non-trivial, so hopefully soon the scikit-image library will be mature enough to fully replace it in the code.
