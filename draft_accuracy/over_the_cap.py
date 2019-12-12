@@ -18,6 +18,10 @@ def download_player_salary_urls():
 
 def download_player_salary_data(player_salary_url):
     data = pd.read_html(player_salary_url, match="Contract Type")
+    assert len(data) == 1, (
+        f"Salary data for {player_salary_url} is possibly malformed."
+        f" Query returned {len(data)} tables"
+    )
     return data[0]
 
 if __name__ == "__main__":
