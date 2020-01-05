@@ -3,7 +3,7 @@ import pathlib
 import typing
 
 from prefect.engine.result_handlers.result_handler import ResultHandler
-from prefect.engine.result import Result
+
 
 class PandasResultHandler(ResultHandler):
     READ_OPS_MAPPING = {
@@ -31,6 +31,6 @@ class PandasResultHandler(ResultHandler):
         data = self.READ_OPS_MAPPING[self.extension](self.path, **self.read_kwargs)
         return data
 
-    def write(self, result: Result):
+    def write(self, result: pd.DataFrame):
         write_function = getattr(result, self.WRITE_OPS_MAPPING[self.extension])
         write_function(self.path, **self.write_kwargs)
