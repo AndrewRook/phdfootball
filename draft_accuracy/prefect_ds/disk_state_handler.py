@@ -4,6 +4,8 @@ from prefect.engine.result import Result
 
 
 def disk_state_handler(task: Task, old_state: State, new_state: State) -> State:
+    if task.task.checkpoint:
+        breakpoint()
     if task.task.checkpoint and old_state.is_pending() and new_state.is_running():
         try:
             data = task.task.result_handler.read()
