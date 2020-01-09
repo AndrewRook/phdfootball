@@ -13,6 +13,4 @@ class DSTaskRunner(TaskRunner):
         executor: "prefect.engine.executors.Executor" = None,
     ) -> State:
         self.upstream_states = upstream_states
-        output = super().run(state=state, upstream_states=upstream_states, context=context, executor=executor)
-        del self.upstream_states
-        return output
+        return super().run(state=state, upstream_states=upstream_states, context=context, executor=executor)
